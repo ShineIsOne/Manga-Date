@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manga Schedule</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@300;400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #111820;
+  --surface:  #18222e;
+  --surface2: #1e2d3d;
+  --border:   #2a3d52;
+  --accent:   #fee715;
+  --accent-dk:#c9b800;
+  --text:     #f0eedc;
+  --text-dim: #7a8fa6;
+  --today:    #fee715;
+  --soon:     #ffb020;
+  --later:    #4db8ff;
+  --past:     #4a5c6e;
+  --idn:      #e63946;
+  --eng:      #4db8ff;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Noto Sans JP', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse 70% 50% at 10% 10%, rgba(254,231,21,0.04) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 90% 90%, rgba(77,184,255,0.04) 0%, transparent 60%);
+  pointer-events: none; z-index: 0;
+}
+
+#view-main {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  position: relative; z-index: 1;
+}
+
+.top-bar {
+  flex-shrink: 0;
+  z-index: 10;
+  background: rgba(17,24,32,0.95);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+  gap: 12px;
+}
+@media (min-width: 600px) { .top-bar { padding: 0 30px; height: 72px; } }
+
+.top-bar-left { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+.top-bar-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px;
+  letter-spacing: 3px;
+  color: var(--accent);
+  white-space: nowrap;
+}
+@media (min-width: 600px) { .top-bar-title { font-size: 32px; } }
+
+.top-bar-date {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  line-height: 1.5;
+  display: none;
+}
+@media (min-width: 640px) { .top-bar-date { display: block; } }
+
+/* LANG TOGGLE */
+.lang-toggle {
+  display: flex;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.lang-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 7px 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 1px;
+}
+.lang-btn.active { background: var(--accent); color: #111820; }
+.lang-btn:hover:not(.active) { color: var(--text); }
+
+.main-body {
+  flex: 1;
+  overflow: hidden;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+@media (min-width: 768px) { .main-body { padding: 20px 30px; gap: 16px; } }
+
+/* STATS */
+.stats-row {
+  display: flex; gap: 6px; flex-wrap: wrap; flex-shrink: 0;
+  animation: fadeUp 0.5s 0.05s both;
+}
+.stat-chip {
+  display: flex; align-items: center; gap: 5px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 100px; padding: 5px 12px;
+  font-family: 'Space Mono', monospace; font-size: 11px; color: var(--text-dim);
+}
+.stat-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+/* MANGA GRID */
+.manga-list {
+  flex: 1;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  align-content: start;
+  padding-bottom: 24px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.manga-list::-webkit-scrollbar { width: 4px; }
+.manga-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+@media (min-width: 480px)  { .manga-list { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 768px)  { .manga-list { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; } }
+@media (min-width: 1200px) { .manga-list { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); } }
+
+/* MANGA CARD */
+.manga-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  animation: cardIn 0.35s cubic-bezier(0.16,1,0.3,1) both;
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+}
+.manga-card:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(0,0,0,0.4); }
+.manga-card.urgent     { border-color: rgba(254,231,21,0.6); box-shadow: 0 4px 14px rgba(254,231,21,0.1); }
+.manga-card.soon-card  { border-color: rgba(255,176,32,0.5); }
+.manga-card.later-card { border-color: rgba(77,184,255,0.3); }
+.manga-card.past-card  { border-color: rgba(74,92,110,0.4); opacity: 0.7; }
+
+.card-bar { height: 4px; flex-shrink: 0; }
+.urgent .card-bar    { background: var(--today); }
+.soon-card .card-bar { background: var(--soon); }
+.later-card .card-bar{ background: var(--later); }
+.past-card .card-bar { background: var(--past); }
+
+.card-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 7px; }
+@media (min-width: 600px) { .card-body { padding: 14px 16px; gap: 8px; } }
+
+.card-top-row { display: flex; align-items: center; justify-content: space-between; }
+.manga-rank { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--text-dim); }
+
+.flag-badges { display: flex; gap: 4px; }
+.flag-badge {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 3px 7px;
+  border-radius: 100px;
+}
+.flag-badge.id { background: rgba(230,57,70,0.15); color: var(--idn); border: 1px solid rgba(230,57,70,0.35); }
+.flag-badge.en { background: rgba(77,184,255,0.15); color: var(--eng); border: 1px solid rgba(77,184,255,0.3); }
+
+.manga-title-wrap { text-decoration: none; display: flex; align-items: flex-start; gap: 4px; }
+.manga-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 20px;
+  letter-spacing: 0.5px;
+  line-height: 1.15;
+  color: var(--text);
+  transition: color 0.2s;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  word-break: break-word;
+}
+@media (min-width: 600px) { .manga-title { font-size: 23px; } }
+.manga-title-wrap:hover .manga-title { color: var(--accent); }
+.manga-title.no-link { color: var(--text-dim); cursor: default; }
+.link-arrow { font-size: 9px; color: var(--accent); opacity: 0; flex-shrink: 0; transition: opacity 0.2s; margin-top: 3px; }
+.manga-title-wrap:hover .link-arrow { opacity: 1; }
+
+.manga-date-display { display: flex; align-items: center; gap: 8px; margin-top: 2px; }
+.date-day-num { font-family: 'Bebas Neue', sans-serif; color: var(--text); line-height: 1; text-align: center; min-width: 32px; }
+.date-month-year { font-family: 'Space Mono', monospace; display: flex; flex-direction: column; }
+.date-month { font-weight: 700; font-size: 12px; }
+.date-year  { color: var(--text-dim); font-size: 10px; }
+
+.urgent .date-day-num, .urgent .date-month        { color: var(--today); }
+.soon-card .date-day-num, .soon-card .date-month   { color: var(--soon); }
+.later-card .date-day-num, .later-card .date-month { color: var(--later); }
+.past-card .date-day-num, .past-card .date-month   { color: var(--past); }
+
+.badge-days {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  padding: 4px 9px;
+  border-radius: 100px;
+  white-space: nowrap;
+  margin-left: auto;
+}
+.urgent    .badge-days { background: rgba(254,231,21,0.15); color: var(--today); border: 1px solid rgba(254,231,21,0.4); }
+.soon-card .badge-days { background: rgba(255,176,32,0.15); color: var(--soon);  border: 1px solid rgba(255,176,32,0.4); }
+.later-card .badge-days{ background: rgba(77,184,255,0.15);  color: var(--later); border: 1px solid rgba(77,184,255,0.3); }
+.past-card  .badge-days{ background: rgba(74,92,110,0.15);  color: var(--past);  border: 1px solid rgba(74,92,110,0.3); }
+
+.empty-state { grid-column: 1/-1; text-align: center; padding: 80px 20px; color: var(--text-dim); }
+.empty-icon { font-size: 54px; margin-bottom: 14px; opacity: 0.3; }
+.empty-title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes cardIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+</style>
+</head>
+<body>
+<div id="view-main">
+  <div class="top-bar">
+    <div class="top-bar-left">
+      <div class="top-bar-title">📚 MANGA SCHEDULE</div>
+      <div class="top-bar-date" id="header-date-main"></div>
+    </div>
+    <div class="lang-toggle">
+      <button class="lang-btn active" id="btn-lang-id" onclick="setLang('id')">IDN</button>
+      <button class="lang-btn" id="btn-lang-en" onclick="setLang('en')">ENG</button>
+    </div>
+  </div>
+  <div class="main-body">
+    <div class="stats-row" id="stats-bar"></div>
+    <div class="manga-list" id="manga-list"></div>
+  </div>
+</div>
+
+<script>
+// ================== DATA — diupdate otomatis oleh admin.pyw ==================
+const MANGA_DATA = [{"id":"mpo6dgu5myzbx","title":"Ririmu Horikku","link":"https://pocket.shonenmagazine.com/title/03242/episode/438161","year":2026,"month":6,"dayStr":"9","flags":["id"]},{"id":"mpo6e9yzowyht","title":"Keiken wo Sukiru ni suru Bannou na Nouryoku wo Te ni Irete, Saikyou no Tansaku-sha ni Narimashita","link":"https://comics.manga-bang.com/series/4044b2e40439b","year":2026,"month":7,"dayStr":"Awal","flags":["id"]},{"id":"mpo6f52de8i4e","title":"ATM Ojisan: Isekai de Mote-ki ga Tomaranai!","link":"https://kimicomi.com/series/19a3246898734?myself=false&s=1","year":2026,"month":6,"dayStr":"9","flags":["id"]},{"id":"mpo6fzt59q1qm","title":"Senchi Kara Kaette kita Takashi-kun. Futsuu ni Koukou Seikatsu wo Okuritai","link":"https://comicpash.jp/series/1b4014372afb1","year":2026,"month":6,"dayStr":"8","flags":["id"]},{"id":"mpo6gmljajd3g","title":"Ore ga Inai to Sugu xx ru Hakanagi Kasumi","link":"https://viewer.heros-web.com/episode/2551460909510469042","year":2026,"month":6,"dayStr":"10","flags":["id"]},{"id":"mpo6hcir6wed4","title":"Make Heroine o Katasetai!! I Want To Make The Losing Heroine Win!!","link":"https://championcross.jp/series/e345a5f1fc20b/?s=1","year":2026,"month":6,"dayStr":"11","flags":["id","en"]},{"id":"mpo6hwdj8oerw","title":"Gyaru Shinkan wa Rizare ga Darui","link":"https://www.sunday-webry.com/episode/2550912965970720742","year":2026,"month":6,"dayStr":"11","flags":["id"]},{"id":"mpo6j1rr7itoq","title":"Kurai Ano Ko to Shitai Koto","link":"https://comic-walker.com/detail/KC_003002_S?episodeType=latest","year":2026,"month":6,"dayStr":"5","flags":["id"]},{"id":"mpo6jkiqrm678","title":"Oshi no Teki ni Natta node","link":"https://to-corona-ex.com/comics/224247451713726","year":2026,"month":7,"dayStr":"Awal","flags":["id"]},{"id":"mpo6kci1uayz9","title":"Megami to Kekkon Shite Isekai de Shinkon Seikatsu","link":"","year":2026,"month":6,"dayStr":"Awal","flags":["id"]},{"id":"mpo6kwesjahmu","title":"Ryuuzaki-san ga Ore no Mae dake de Dereru Riyuu","link":"https://manga-zegra.com/series/d6a8504141c1c","year":2026,"month":6,"dayStr":"5","flags":["id"]},{"id":"mpo6lkr5exjze","title":"Super no Ura de Yani Suu Futari","link":"","year":2026,"month":6,"dayStr":"Akhir","flags":["id"]}];
+
+// ================== LANG ==================
+let lang = 'id';
+const T = {
+  id: {
+    ms: ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],
+    today: 'HARI INI!', tomorrow: 'Besok',
+    ago: d => `${d}h lalu`, left: d => `${d} hari lagi`,
+    s_today:'Hari Ini', s_soon:'Segera', s_later:'Mendatang', s_past:'Lewat', s_total:'TOTAL',
+  },
+  en: {
+    ms: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+    today: 'TODAY!', tomorrow: 'Tomorrow',
+    ago: d => `${d}d ago`, left: d => `in ${d}d`,
+    s_today:'Today', s_soon:'Soon', s_later:'Upcoming', s_past:'Past', s_total:'TOTAL',
+  }
+};
+
+function setLang(l) {
+  lang = l;
+  document.getElementById('btn-lang-id').classList.toggle('active', l==='id');
+  document.getElementById('btn-lang-en').classList.toggle('active', l==='en');
+  updateHeaderDate();
+  render();
+}
+
+// ================== DATE HELPERS ==================
+function daysInMonth(m, y) { return new Date(y, m, 0).getDate(); }
+
+function getApproxDate(m) {
+  let d = parseInt(m.dayStr);
+  if (isNaN(d)) {
+    const s = (m.dayStr||'').toLowerCase();
+    if (s.includes('awal')||s.includes('early')) d=5;
+    else if (s.includes('tengah')||s.includes('mid')) d=15;
+    else if (s.includes('akhir')||s.includes('end')) d=26;
+    else if (s.includes('-')) d=parseInt(s.split('-')[0])||15;
+    else d=15;
+  }
+  d = Math.max(1, Math.min(d, daysInMonth(m.month, m.year)));
+  return new Date(m.year, m.month-1, d);
+}
+
+function daysUntil(m) {
+  const now=new Date(); now.setHours(0,0,0,0);
+  const tgt=getApproxDate(m); tgt.setHours(0,0,0,0);
+  return Math.round((tgt-now)/86400000);
+}
+
+function daysLabel(days) {
+  const t=T[lang];
+  if(days<0) return t.ago(Math.abs(days));
+  if(days===0) return t.today;
+  if(days===1) return t.tomorrow;
+  return t.left(days);
+}
+
+function urgencyClass(days) {
+  if(days<0) return 'past-card';
+  if(days===0) return 'urgent';
+  if(days<=3) return 'soon-card';
+  return 'later-card';
+}
+
+function parseDayDisplay(dayStr) {
+  const s=dayStr||'?'; const len=s.length;
+  let fs='32px', lh='1', wb='normal';
+  if(len>8){fs='12px';lh='1.2';wb='break-word';}
+  else if(len>5){fs='15px';lh='1.1';}
+  else if(len>3){fs='20px';}
+  else if(len>2){fs='26px';}
+  return `<div class="date-day-num" style="font-size:${fs};line-height:${lh};word-break:${wb};">${escHtml(s)}</div>`;
+}
+
+function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// ================== RENDER ==================
+function render() {
+  const list=document.getElementById('manga-list');
+  const statsEl=document.getElementById('stats-bar');
+  const t=T[lang];
+  const sorted=[...MANGA_DATA].sort((a,b)=>getApproxDate(a)-getApproxDate(b));
+
+  let cT=0,cS=0,cL=0,cP=0;
+  sorted.forEach(m=>{const d=daysUntil(m);if(d<0)cP++;else if(d===0)cT++;else if(d<=3)cS++;else cL++;});
+
+  statsEl.innerHTML=`
+    <div class="stat-chip"><span class="stat-dot" style="background:var(--today)"></span>${cT} ${t.s_today}</div>
+    <div class="stat-chip"><span class="stat-dot" style="background:var(--soon)"></span>${cS} ${t.s_soon}</div>
+    <div class="stat-chip"><span class="stat-dot" style="background:var(--later)"></span>${cL} ${t.s_later}</div>
+    <div class="stat-chip"><span class="stat-dot" style="background:var(--past)"></span>${cP} ${t.s_past}</div>
+    <div class="stat-chip" style="margin-left:auto;font-weight:700;">${sorted.length} ${t.s_total}</div>
+  `;
+
+  if(!sorted.length){
+    list.innerHTML=`<div class="empty-state"><div class="empty-icon">📖</div><div class="empty-title">No Manga</div></div>`;
+    return;
+  }
+
+  list.innerHTML = sorted.map((m,i)=>{
+    const days=daysUntil(m), urg=urgencyClass(days), lbl=daysLabel(days);
+    const flags=(m.flags||['id']);
+    const flagsHtml=flags.map(f=>`<span class="flag-badge ${f}">${f==='id'?'IDN':'ENG'}</span>`).join('');
+    const titleHtml=m.link
+      ?`<a class="manga-title-wrap" href="${escHtml(m.link)}" target="_blank" rel="noopener"><span class="manga-title">${escHtml(m.title)}</span><span class="link-arrow">↗</span></a>`
+      :`<span class="manga-title no-link">${escHtml(m.title)}</span>`;
+    return `
+    <div class="manga-card ${urg}" style="animation-delay:${i*0.03}s">
+      <div class="card-bar"></div>
+      <div class="card-body">
+        <div class="card-top-row">
+          <div class="manga-rank">#${String(i+1).padStart(2,'0')}</div>
+          <div class="flag-badges">${flagsHtml}</div>
+        </div>
+        ${titleHtml}
+        <div class="manga-date-display">
+          ${parseDayDisplay(m.dayStr)}
+          <div class="date-month-year">
+            <span class="date-month">${t.ms[m.month-1]}</span>
+            <span class="date-year">${m.year}</span>
+          </div>
+          <span class="badge-days">${lbl}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function updateHeaderDate(){
+  document.getElementById('header-date-main').textContent=
+    new Date().toLocaleDateString(lang==='id'?'id-ID':'en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+}
+
+render();
+updateHeaderDate();
+</script>
+</body>
+</html>
