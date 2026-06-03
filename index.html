@@ -29,6 +29,7 @@ body {
   font-family: 'Noto Sans JP', sans-serif;
   min-height: 100vh;
   overflow-x: hidden;
+  overflow-y: auto;
 }
 body::before {
   content: '';
@@ -42,13 +43,13 @@ body::before {
 #view-main {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100dvh;
   position: relative; z-index: 1;
 }
 
 .top-bar {
-  flex-shrink: 0;
+  position: sticky;
+  top: 0;
   z-index: 10;
   background: rgba(17,24,32,0.95);
   backdrop-filter: blur(12px);
@@ -107,7 +108,6 @@ body::before {
 
 .main-body {
   flex: 1;
-  overflow: hidden;
   padding: 14px 16px;
   display: flex;
   flex-direction: column;
@@ -130,19 +130,13 @@ body::before {
 
 /* MANGA GRID */
 .manga-list {
-  flex: 1;
-  overflow-y: auto;
   display: grid;
   grid-template-columns: 1fr;
   gap: 10px;
   align-content: start;
-  padding-bottom: 24px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
+  padding-bottom: 32px;
 }
-.manga-list::-webkit-scrollbar { width: 4px; }
-.manga-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-@media (min-width: 480px)  { .manga-list { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 540px)  { .manga-list { grid-template-columns: repeat(2, 1fr); } }
 @media (min-width: 768px)  { .manga-list { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; } }
 @media (min-width: 1200px) { .manga-list { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); } }
 
@@ -261,7 +255,7 @@ body::before {
 
 <script>
 // ================== DATA — diupdate otomatis oleh admin.pyw ==================
-const MANGA_DATA = [{"id":"mpo6dgu5myzbx","title":"Ririmu Horikku","link":"https://pocket.shonenmagazine.com/title/03242/episode/438161","year":2026,"month":6,"dayStr":"9","flags":["id"]},{"id":"mpo6e9yzowyht","title":"Keiken wo Sukiru ni suru Bannou na Nouryoku wo Te ni Irete, Saikyou no Tansaku-sha ni Narimashita","link":"https://comics.manga-bang.com/series/4044b2e40439b","year":2026,"month":7,"dayStr":"Awal","flags":["id"]},{"id":"mpo6f52de8i4e","title":"ATM Ojisan: Isekai de Mote-ki ga Tomaranai!","link":"https://kimicomi.com/series/19a3246898734?myself=false&s=1","year":2026,"month":6,"dayStr":"9","flags":["id"]},{"id":"mpo6fzt59q1qm","title":"Senchi Kara Kaette kita Takashi-kun. Futsuu ni Koukou Seikatsu wo Okuritai","link":"https://comicpash.jp/series/1b4014372afb1","year":2026,"month":6,"dayStr":"8","flags":["id"]},{"id":"mpo6gmljajd3g","title":"Ore ga Inai to Sugu xx ru Hakanagi Kasumi","link":"https://viewer.heros-web.com/episode/2551460909510469042","year":2026,"month":6,"dayStr":"10","flags":["id"]},{"id":"mpo6hcir6wed4","title":"Make Heroine o Katasetai!! I Want To Make The Losing Heroine Win!!","link":"https://championcross.jp/series/e345a5f1fc20b/?s=1","year":2026,"month":6,"dayStr":"11","flags":["id","en"]},{"id":"mpo6hwdj8oerw","title":"Gyaru Shinkan wa Rizare ga Darui","link":"https://www.sunday-webry.com/episode/2550912965970720742","year":2026,"month":6,"dayStr":"11","flags":["id"]},{"id":"mpo6j1rr7itoq","title":"Kurai Ano Ko to Shitai Koto","link":"https://comic-walker.com/detail/KC_003002_S?episodeType=latest","year":2026,"month":6,"dayStr":"5","flags":["id"]},{"id":"mpo6jkiqrm678","title":"Oshi no Teki ni Natta node","link":"https://to-corona-ex.com/comics/224247451713726","year":2026,"month":7,"dayStr":"Awal","flags":["id"]},{"title":"Megami to Kekkon Shite Isekai de Shinkon Seikatsu","link":"","dayStr":"Awal","month":6,"year":2026,"flags":["id","en"],"id":"mpo6kci1uayz9"},{"id":"mpo6kwesjahmu","title":"Ryuuzaki-san ga Ore no Mae dake de Dereru Riyuu","link":"https://manga-zegra.com/series/d6a8504141c1c","year":2026,"month":6,"dayStr":"5","flags":["id"]},{"id":"mpo6lkr5exjze","title":"Super no Ura de Yani Suu Futari","link":"","year":2026,"month":6,"dayStr":"Akhir","flags":["id"]}];
+const MANGA_DATA = [{"title":"Ririmu Horikku","link":"https://pocket.shonenmagazine.com/title/03242/episode/438161","dayStr":"9","month":6,"year":2026,"flags":["id","en"],"id":"mpo6dgu5myzbx"},{"title":"Keiken wo Sukiru ni suru Bannou na Nouryoku wo Te ni Irete, Saikyou no Tansaku-sha ni Narimashita","link":"https://comics.manga-bang.com/series/4044b2e40439b","dayStr":"Awal","month":7,"year":2026,"flags":["id","en"],"id":"mpo6e9yzowyht"},{"title":"ATM Ojisan: Isekai de Mote-ki ga Tomaranai!","link":"https://kimicomi.com/series/19a3246898734?myself=false&s=1","dayStr":"9","month":6,"year":2026,"flags":["id","en"],"id":"mpo6f52de8i4e"},{"title":"Senchi Kara Kaette kita Takashi-kun. Futsuu ni Koukou Seikatsu wo Okuritai","link":"https://comicpash.jp/series/1b4014372afb1","dayStr":"8","month":6,"year":2026,"flags":["id","en"],"id":"mpo6fzt59q1qm"},{"title":"Ore ga Inai to Sugu xx ru Hakanagi Kasumi","link":"https://viewer.heros-web.com/episode/2551460909510469042","dayStr":"10","month":6,"year":2026,"flags":["id","en"],"id":"mpo6gmljajd3g"},{"title":"Make Heroine o Katasetai!! I Want To Make The Losing Heroine Win!!","link":"https://championcross.jp/series/e345a5f1fc20b/?s=1","dayStr":"11","month":6,"year":2026,"flags":["id"],"id":"mpo6hcir6wed4"},{"title":"Gyaru Shinkan wa Rizare ga Darui","link":"https://www.sunday-webry.com/episode/2550912965970720742","dayStr":"11","month":6,"year":2026,"flags":["id","en"],"id":"mpo6hwdj8oerw"},{"id":"mpo6j1rr7itoq","title":"Kurai Ano Ko to Shitai Koto","link":"https://comic-walker.com/detail/KC_003002_S?episodeType=latest","year":2026,"month":6,"dayStr":"5","flags":["id"]},{"title":"Oshi no Teki ni Natta node","link":"https://to-corona-ex.com/comics/224247451713726","dayStr":"Awal","month":7,"year":2026,"flags":["id","en"],"id":"mpo6jkiqrm678"},{"title":"Megami to Kekkon Shite Isekai de Shinkon Seikatsu","link":"","dayStr":"Awal","month":6,"year":2026,"flags":["id","en"],"id":"mpo6kci1uayz9"},{"title":"Ryuuzaki-san ga Ore no Mae dake de Dereru Riyuu","link":"https://manga-zegra.com/series/d6a8504141c1c","dayStr":"5","month":6,"year":2026,"flags":["id","en"],"id":"mpo6kwesjahmu"},{"id":"mpo6lkr5exjze","title":"Super no Ura de Yani Suu Futari","link":"","year":2026,"month":6,"dayStr":"Akhir","flags":["id"]}];
 
 // ================== LANG ==================
 let lang = 'id';
@@ -269,15 +263,17 @@ const T = {
   id: {
     ms: ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],
     today: 'HARI INI!', tomorrow: 'Besok',
-    ago: d => `${d}h lalu`, left: d => `${d} hari lagi`,
+    ago: d => `${d} hari lalu`, left: d => `${d} hari lagi`,
     s_today:'Hari Ini', s_soon:'Segera', s_later:'Mendatang', s_past:'Lewat', s_total:'TOTAL',
+    day_early:'Awal', day_mid:'Tengah', day_end:'Akhir',
   },
   en: {
     ms: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
     today: 'TODAY!', tomorrow: 'Tomorrow',
-    ago: d => `${d}d ago`, left: d => `in ${d}d`,
+    ago: d => `${d} day${d>1?'s':''} ago`, left: d => `in ${d} day${d>1?'s':''}`,
     s_today:'Today', s_soon:'Soon', s_later:'Upcoming', s_past:'Past', s_total:'TOTAL',
-  }
+    day_early:'Early', day_mid:'Mid', day_end:'End',
+  },
 };
 
 function setLang(l) {
@@ -327,7 +323,13 @@ function urgencyClass(days) {
 }
 
 function parseDayDisplay(dayStr) {
-  const s=dayStr||'?'; const len=s.length;
+  const t = T[lang];
+  let s = dayStr || '?';
+  const sl = s.toLowerCase();
+  if (sl.includes('awal') || sl.includes('early')) s = t.day_early;
+  else if (sl.includes('tengah') || sl.includes('mid')) s = t.day_mid;
+  else if (sl.includes('akhir') || sl.includes('end')) s = t.day_end;
+  const len = s.length;
   let fs='32px', lh='1', wb='normal';
   if(len>8){fs='12px';lh='1.2';wb='break-word';}
   else if(len>5){fs='15px';lh='1.1';}
