@@ -233,9 +233,63 @@ body::before {
 
 @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes cardIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+
+/* LANG PICKER OVERLAY */
+#lang-picker {
+  position: fixed; inset: 0; z-index: 9999;
+  background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  transition: opacity 0.4s ease, visibility 0.4s;
+}
+#lang-picker.hide {
+  opacity: 0; visibility: hidden; pointer-events: none;
+}
+.lp-box {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  animation: fadeUp 0.5s 0.1s ease both;
+}
+.lp-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 36px; letter-spacing: 4px; color: var(--accent);
+  margin-bottom: 4px;
+}
+.lp-sub {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px; color: var(--text-dim);
+  letter-spacing: 1px; margin-bottom: 28px; text-align: center;
+}
+.lp-buttons { display: flex; gap: 16px; }
+.lp-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 20px 32px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; cursor: pointer;
+  font-family: 'Space Mono', monospace; font-size: 13px;
+  font-weight: 700; letter-spacing: 1px; color: var(--text);
+  transition: all 0.2s; min-width: 120px;
+}
+.lp-btn img { width: 44px; height: 29px; object-fit: fill; border-radius: 5px; box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
+.lp-btn:hover { border-color: var(--accent); background: var(--surface2); transform: translateY(-3px); box-shadow: 0 8px 20px rgba(254,231,21,0.1); }
+@media (max-width: 400px) { .lp-btn { padding: 16px 22px; min-width: 100px; } .lp-buttons { gap: 12px; } }
 </style>
 </head>
 <body>
+<div id="lang-picker">
+  <div class="lp-box">
+    <div class="lp-title">📚 MANGA SCHEDULE</div>
+    <div class="lp-sub">CHOOSE YOUR LANGUAGE / PILIH BAHASA</div>
+    <div class="lp-buttons">
+      <button class="lp-btn" onclick="pickLang('id')">
+        <img src="https://flagcdn.com/w40/id.png" alt="ID">
+        INDONESIA
+      </button>
+      <button class="lp-btn" onclick="pickLang('en')">
+        <img src="https://flagcdn.com/w40/gb.png" alt="EN">
+        ENGLISH
+      </button>
+    </div>
+  </div>
+</div>
 <div id="view-main">
   <div class="top-bar">
     <div class="top-bar-left">
@@ -255,7 +309,7 @@ body::before {
 
 <script>
 // ================== DATA — diupdate otomatis oleh admin.pyw ==================
-const MANGA_DATA = [{"title":"Ririmu Horikku","link":"https://pocket.shonenmagazine.com/title/03242/episode/438161","dayStr":"9","month":6,"year":2026,"flags":["id","en"],"id":"mpo6dgu5myzbx"},{"title":"Keiken wo Sukiru ni suru Bannou na Nouryoku wo Te ni Irete, Saikyou no Tansaku-sha ni Narimashita","link":"https://comics.manga-bang.com/series/4044b2e40439b","dayStr":"Awal","month":7,"year":2026,"flags":["id","en"],"id":"mpo6e9yzowyht"},{"title":"ATM Ojisan: Isekai de Mote-ki ga Tomaranai!","link":"https://kimicomi.com/series/19a3246898734?myself=false&s=1","dayStr":"9","month":6,"year":2026,"flags":["id","en"],"id":"mpo6f52de8i4e"},{"title":"Senchi Kara Kaette kita Takashi-kun. Futsuu ni Koukou Seikatsu wo Okuritai","link":"https://comicpash.jp/series/1b4014372afb1","dayStr":"8","month":6,"year":2026,"flags":["id","en"],"id":"mpo6fzt59q1qm"},{"title":"Ore ga Inai to Sugu xx ru Hakanagi Kasumi","link":"https://viewer.heros-web.com/episode/2551460909510469042","dayStr":"10","month":6,"year":2026,"flags":["id","en"],"id":"mpo6gmljajd3g"},{"title":"Make Heroine o Katasetai!! I Want To Make The Losing Heroine Win!!","link":"https://championcross.jp/series/e345a5f1fc20b/?s=1","dayStr":"11","month":6,"year":2026,"flags":["id"],"id":"mpo6hcir6wed4"},{"title":"Gyaru Shinkan wa Rizare ga Darui","link":"https://www.sunday-webry.com/episode/2550912965970720742","dayStr":"11","month":6,"year":2026,"flags":["id","en"],"id":"mpo6hwdj8oerw"},{"title":"Kurai Ano Ko to Shitai Koto","link":"https://comic-walker.com/detail/KC_003002_S?episodeType=latest","dayStr":"19","month":6,"year":2026,"flags":["id"],"id":"mpo6j1rr7itoq"},{"title":"Oshi no Teki ni Natta node","link":"https://to-corona-ex.com/comics/224247451713726","dayStr":"Awal","month":7,"year":2026,"flags":["id","en"],"id":"mpo6jkiqrm678"},{"title":"Megami to Kekkon Shite Isekai de Shinkon Seikatsu","link":"","dayStr":"Awal","month":7,"year":2026,"flags":["id","en"],"id":"mpo6kci1uayz9"},{"title":"Ryuuzaki-san ga Ore no Mae dake de Dereru Riyuu","link":"https://manga-zegra.com/series/d6a8504141c1c","dayStr":"5","month":6,"year":2026,"flags":["id","en"],"id":"mpo6kwesjahmu"},{"id":"mpo6lkr5exjze","title":"Super no Ura de Yani Suu Futari","link":"","year":2026,"month":6,"dayStr":"Akhir","flags":["id"]}];
+const MANGA_DATA = [{"title":"Ririmu Horikku","link":"https://pocket.shonenmagazine.com/title/03242/episode/438161","dayStr":"9","month":6,"year":2026,"flags":["id","en"],"id":"mpo6dgu5myzbx"},{"title":"Keiken wo Sukiru ni suru Bannou na Nouryoku wo Te ni Irete, Saikyou no Tansaku-sha ni Narimashita","link":"https://comics.manga-bang.com/series/4044b2e40439b","dayStr":"Awal","month":7,"year":2026,"flags":["id","en"],"id":"mpo6e9yzowyht"},{"title":"ATM Ojisan: Isekai de Mote-ki ga Tomaranai!","link":"https://kimicomi.com/series/19a3246898734?myself=false&s=1","dayStr":"9","month":6,"year":2026,"flags":["id","en"],"id":"mpo6f52de8i4e"},{"title":"Senchi Kara Kaette kita Takashi-kun. Futsuu ni Koukou Seikatsu wo Okuritai","link":"https://comicpash.jp/series/1b4014372afb1","dayStr":"8","month":6,"year":2026,"flags":["id","en"],"id":"mpo6fzt59q1qm"},{"title":"Ore ga Inai to Sugu xx ru Hakanagi Kasumi","link":"https://viewer.heros-web.com/episode/2551460909510469042","dayStr":"10","month":6,"year":2026,"flags":["id","en"],"id":"mpo6gmljajd3g"},{"title":"Make Heroine o Katasetai!! I Want To Make The Losing Heroine Win!!","link":"https://championcross.jp/series/e345a5f1fc20b/?s=1","dayStr":"11","month":6,"year":2026,"flags":["id"],"id":"mpo6hcir6wed4"},{"title":"Gyaru Shinkan wa Rizare ga Darui","link":"https://www.sunday-webry.com/episode/2550912965970720742","dayStr":"11","month":6,"year":2026,"flags":["id","en"],"id":"mpo6hwdj8oerw"},{"title":"Kurai Ano Ko to Shitai Koto","link":"https://comic-walker.com/detail/KC_003002_S?episodeType=latest","dayStr":"19","month":6,"year":2026,"flags":["id"],"id":"mpo6j1rr7itoq"},{"title":"Oshi no Teki ni Natta node","link":"https://to-corona-ex.com/comics/224247451713726","dayStr":"Awal","month":7,"year":2026,"flags":["id","en"],"id":"mpo6jkiqrm678"},{"title":"Megami to Kekkon Shite Isekai de Shinkon Seikatsu","link":"","dayStr":"Awal","month":7,"year":2026,"flags":["id","en"],"id":"mpo6kci1uayz9"},{"title":"Ryuuzaki-san ga Ore no Mae dake de Dereru Riyuu","link":"https://manga-zegra.com/series/d6a8504141c1c","dayStr":"12","month":6,"year":2026,"flags":["id","en"],"id":"mpo6kwesjahmu"},{"id":"mpo6lkr5exjze","title":"Super no Ura de Yani Suu Futari","link":"","year":2026,"month":6,"dayStr":"Akhir","flags":["id"]}];
 
 // ================== LANG ==================
 let lang = 'id';
@@ -397,8 +451,14 @@ function updateHeaderDate(){
     new Date().toLocaleDateString(lang==='id'?'id-ID':'en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
 }
 
-render();
-updateHeaderDate();
+function pickLang(l) {
+  document.getElementById('lang-picker').classList.add('hide');
+  setLang(l);
+}
+
+// Don't auto-render until language is picked
+// render();
+// updateHeaderDate();
 </script>
 </body>
 </html>
