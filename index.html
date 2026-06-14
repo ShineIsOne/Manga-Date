@@ -358,14 +358,6 @@ body::before {
 .cal-day.cal-edge.selected { border-color: var(--accent); background: var(--surface2); }
 .cal-day.cal-edge.selected .cal-edge-label { color: var(--accent); }
 
-.cal-edge-banner {
-  display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  background: rgba(254,231,21,0.04); border: 1px dashed var(--border); border-radius: 8px;
-  padding: 7px 10px; cursor: pointer; transition: all 0.2s; margin-top: 4px;
-  font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 0.5px; color: var(--text-dim);
-}
-.cal-edge-banner:hover, .cal-edge-banner.selected { border-color: var(--accent); color: var(--text); background: var(--surface2); }
-.cal-edge-banner-label { text-transform: uppercase; font-weight: 700; }
 </style>
 </head>
 <body>
@@ -728,12 +720,15 @@ function renderCalendar() {
   const todayDate = now.getDate();
 
   const cells = [];
+  // 1. Slot kosong awal bulan
   for (let i = 0; i < firstWeekday; i++) cells.push({ type: 'empty' });
+  
+  // 2. Tanggal kalender
   for (let d = 1; d <= totalDays; d++) cells.push({ type: 'day', d });
 
-  let bannerAwal = false, bannerAkhir = false;
-
-  // Coba masukkan "Awal" ke sel kosong pertama
+  // 3. Masukkan kotak-kotak Edge Marker (Awal, Tengah, Akhir)
+  
+  // Untuk "Awal", coba cari slot kosong di *depan* tanggal 1. Jika tidak ada, dorong ke belakang bersama yang lain.
   if (_calEdgeMap.awal.length) {
     let idx = -1;
     for (let i = 0; i < cells.length; i++) {
@@ -741,36 +736,32 @@ function renderCalendar() {
       idx = i;
     }
     if (idx >= 0) cells[idx] = { type: 'edge', key: 'awal' };
-    else bannerAwal = true;
+    else cells.push({ type: 'edge', key: 'awal' }); // Jika hari ke-1 jatuh di hari Minggu (tidak ada sel kosong awal)
   }
 
-  // Coba masukkan "Akhir" ke sel kosong terakhir
+  // "Tengah" selalu kita tumpuk rapi di belakang
+  if (_calEdgeMap.tengah.length) {
+    cells.push({ type: 'edge', key: 'tengah' });
+  }
+
+  // "Akhir" selalu kita tumpuk rapi di belakang
   if (_calEdgeMap.akhir.length) {
-    const rem = cells.length % 7;
-    const trailing = rem === 0 ? 0 : 7 - rem;
-    if (trailing > 0) cells.push({ type: 'edge', key: 'akhir' });
-    else bannerAkhir = true;
+    cells.push({ type: 'edge', key: 'akhir' });
   }
 
+  // Render HTML berdasarkan urutan sel
   let html = '';
-  if (bannerAwal) html += edgeBannerHtml('awal', t, m, y);
-
   cells.forEach(cell => {
     if (cell.type === 'empty') html += `<div class="cal-day empty"></div>`;
     else if (cell.type === 'day') html += dayCellHtml(cell.d, t, isCurMonth, todayDate);
     else if (cell.type === 'edge') html += edgeCellHtml(cell.key, t, m, y);
   });
 
+  // Tambahkan sel kosong ekstra supaya grid bagian paling bawahnya rapi (kelipatan 7)
   const remainder = cells.length % 7;
   if (remainder !== 0) {
     for (let i = 0; i < 7 - remainder; i++) html += `<div class="cal-day empty"></div>`;
   }
-
-  // "Tengah" tidak punya tempat alami di dalam grid kalender karena berada di tengah bulan,
-  // jadi kita selalu render sebagai banner ekstra di bawah grid.
-  if (_calEdgeMap.tengah.length) html += edgeBannerHtml('tengah', t, m, y);
-  
-  if (bannerAkhir) html += edgeBannerHtml('akhir', t, m, y);
 
   document.getElementById('cal-grid').innerHTML = html;
 
@@ -816,17 +807,6 @@ function edgeCellHtml(key, t, monthIdx, year) {
   const selectedCls = (calSelectedDay === key) ? ' selected' : '';
   return `<div class="cal-day cal-edge has-manga${selectedCls}" onclick="showEdgeDetail('${key}')">
     <div class="cal-edge-label">${escHtml(label)}<br><span style="font-size:7.5px; opacity:0.8; margin-top:2px; display:block;">${rangeText}</span></div>${edgeDots(key)}
-  </div>`;
-}
-
-function edgeBannerHtml(key, t, monthIdx, year) {
-  const lastDay = daysInMonth(monthIdx + 1, year);
-  const label = key === 'awal' ? t.day_early : (key === 'tengah' ? t.day_mid : t.day_end);
-  const rangeText = key === 'awal' ? '(1-10)' : (key === 'tengah' ? '(11-19)' : `(20-${lastDay})`);
-  const selectedCls = (calSelectedDay === key) ? ' selected' : '';
-  return `<div class="cal-edge-banner${selectedCls}" style="grid-column:1/-1" onclick="showEdgeDetail('${key}')">
-    <span class="cal-edge-banner-label">${escHtml(label)} <span style="opacity:0.7; font-size:10px">${rangeText}</span> - ${t.ms[monthIdx]}</span>
-    ${edgeDots(key)}
   </div>`;
 }
 
