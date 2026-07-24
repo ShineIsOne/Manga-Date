@@ -425,6 +425,8 @@ const T = {
   id: {
     ms: ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'],
     wd: ['Min','Sen','Sel','Rab','Kam','Jum','Sab'],
+    daysLong: ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'],
+    monthsLong: ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'],
     today: 'HARI INI!', ongoing: 'SEDANG RILIS!', tomorrow: 'Besok',
     ago: d => `${d} hari lalu`, left: d => `${d} hari lagi`,
     s_today:'Hari Ini', s_soon:'Segera', s_later:'Mendatang', s_past:'Lewat', s_total:'TOTAL',
@@ -434,6 +436,8 @@ const T = {
   en: {
     ms: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
     wd: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
+    daysLong: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+    monthsLong: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
     today: 'TODAY!', ongoing: 'ONGOING!', tomorrow: 'Tomorrow',
     ago: d => `${d} day${d>1?'s':''} ago`, left: d => `in ${d} day${d>1?'s':''}`,
     s_today:'Today', s_soon:'Soon', s_later:'Upcoming', s_past:'Past', s_total:'TOTAL',
@@ -615,6 +619,15 @@ function render() {
     const titleHtml=m.link
       ?`<a class="manga-title-wrap" href="${escHtml(m.link)}" target="_blank" rel="noopener"><span class="manga-title">${escHtml(m.title)}</span><span class="link-arrow">↗</span></a>`
       :`<span class="manga-title no-link">${escHtml(m.title)}</span>`;
+
+    // Ambil hari dari tanggal jika dayStr berupa angka
+    const dayNum = parseInt(m.dayStr);
+    let weekdayStr = '';
+    if (!isNaN(dayNum)) {
+      const dt = new Date(m.year, m.month - 1, dayNum);
+      weekdayStr = t.daysLong[dt.getDay()];
+    }
+
     return `
     <div class="manga-card ${urg}" style="animation-delay:${i*0.03}s">
       <div class="card-bar"></div>
@@ -627,7 +640,7 @@ function render() {
         <div class="manga-date-display">
           ${parseDayDisplay(m)}
           <div class="date-month-year">
-            <span class="date-month">${t.ms[m.month-1]}</span>
+            <span class="date-month">${t.ms[m.month-1]}${weekdayStr ? ` (${weekdayStr})` : ''}</span>
             <span class="date-year">${m.year}</span>
           </div>
           <span class="badge-days">${lbl}</span>
@@ -638,8 +651,18 @@ function render() {
 }
 
 function updateHeaderDate(){
-  document.getElementById('header-date-main').textContent=
-    new Date().toLocaleDateString(lang==='id'?'id-ID':'en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const d = new Date();
+  const t = T[lang];
+  const dayName = t.daysLong[d.getDay()];
+  const dateNum = d.getDate();
+  const monthName = t.monthsLong[d.getMonth()];
+  const yearNum = d.getFullYear();
+  
+  if (lang === 'id') {
+    document.getElementById('header-date-main').textContent = `Hari Ini: ${dayName}, ${dateNum} ${monthName} ${yearNum}`;
+  } else {
+    document.getElementById('header-date-main').textContent = `Today: ${dayName}, ${monthName} ${dateNum}, ${yearNum}`;
+  }
 }
 
 function pickLang(l) {
