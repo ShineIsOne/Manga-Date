@@ -63,24 +63,25 @@ body::before {
 }
 @media (min-width: 600px) { .top-bar { padding: 0 30px; height: 72px; } }
 
-.top-bar-left { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+.top-bar-left { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 2px; flex: 1; min-width: 0; }
+@media (min-width: 640px) { .top-bar-left { flex-direction: row; align-items: center; gap: 12px; } }
 .top-bar-title {
   font-family: 'Bebas Neue', sans-serif;
   font-size: 26px;
   letter-spacing: 3px;
   color: var(--accent);
   white-space: nowrap;
+  line-height: 1;
 }
 @media (min-width: 600px) { .top-bar-title { font-size: 32px; } }
 
 .top-bar-date {
   font-family: 'Space Mono', monospace;
-  font-size: 11px;
+  font-size: 9px;
   color: var(--text-dim);
-  line-height: 1.5;
-  display: none;
+  line-height: 1;
 }
-@media (min-width: 640px) { .top-bar-date { display: block; } }
+@media (min-width: 640px) { .top-bar-date { font-size: 11px; line-height: 1.5; } }
 
 /* LANG TOGGLE */
 .lang-toggle {
