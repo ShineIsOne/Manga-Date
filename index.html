@@ -54,14 +54,14 @@ body::before {
   background: rgba(17,24,32,0.95);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
-  padding: 0 20px;
+  padding: 8px 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 64px;
+  min-height: 64px;
   gap: 12px;
 }
-@media (min-width: 600px) { .top-bar { padding: 0 30px; height: 72px; } }
+@media (min-width: 600px) { .top-bar { padding: 8px 30px; min-height: 72px; } }
 
 .top-bar-left { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 2px; flex: 1; min-width: 0; }
 @media (min-width: 640px) { .top-bar-left { flex-direction: row; align-items: center; gap: 12px; } }
@@ -82,6 +82,10 @@ body::before {
   line-height: 1;
 }
 @media (min-width: 640px) { .top-bar-date { font-size: 11px; line-height: 1.5; } }
+.tz-row { display: block; line-height: 1.5; margin-top: 2px; }
+.tz-label { color: var(--accent); font-weight: 700; }
+.tz-diff { color: var(--text); }
+.rel-countdown { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--text-dim); margin-top: 6px; }
 
 /* LANG TOGGLE */
 .lang-toggle {
@@ -457,6 +461,18 @@ function setLang(l) {
 }
 
 // ================== DATE HELPERS ==================
+// Zona waktu acuan: semua tanggal rilis & "hari ini" mengikuti zona ini untuk semua pengunjung.
+const REF_TZ = 'Asia/Jakarta';   // WIB
+const OWNER_NAME = '';           // isi nama kamu, mis. 'Nama Kamu' (kosongkan kalau tidak mau)
+
+// Tanggal "hari ini" (jam 00:00) menurut REF_TZ, bukan jam perangkat pengunjung
+function refToday() {
+  const [y, m, d] = new Intl.DateTimeFormat('en-CA', {
+    timeZone: REF_TZ, year: 'numeric', month: '2-digit', day: '2-digit'
+  }).format(new Date()).split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
 function daysInMonth(m, y) { return new Date(y, m, 0).getDate(); } // m is 1-indexed
 
 function getApproxRange(m) {
@@ -501,7 +517,7 @@ function getSortDate(m) {
 
 function daysUntil(m) {
   const range = getApproxRange(m);
-  const now = new Date(); now.setHours(0,0,0,0);
+  const now = refToday();
   const tStart = range.startDate.getTime();
   const tEnd = range.endDate.getTime();
   const tNow = now.getTime();
@@ -629,6 +645,8 @@ function render() {
       weekdayStr = t.daysLong[dt.getDay()];
     }
 
+    const cdHtml = days > 0 ? `<div class="rel-countdown" data-start="${releaseStartMs(m)}" data-days="${days}"></div>` : '';
+
     return `
     <div class="manga-card ${urg}" style="animation-delay:${i*0.03}s">
       <div class="card-bar"></div>
@@ -646,25 +664,89 @@ function render() {
           </div>
           <span class="badge-days">${lbl}</span>
         </div>
+        ${cdHtml}
       </div>
     </div>`;
   }).join('');
+  tickCountdowns();
 }
 
-function updateHeaderDate(){
-  const d = new Date();
-  const t = T[lang];
-  const dayName = t.daysLong[d.getDay()];
-  const dateNum = d.getDate();
-  const monthName = t.monthsLong[d.getMonth()];
-  const yearNum = d.getFullYear();
-  
-  if (lang === 'id') {
-    document.getElementById('header-date-main').textContent = `Hari Ini: ${dayName}, ${dateNum} ${monthName} ${yearNum}`;
-  } else {
-    document.getElementById('header-date-main').textContent = `Today: ${dayName}, ${monthName} ${dateNum}, ${yearNum}`;
-  }
+function fmtZone(tz, d, loc) {
+  const date = new Intl.DateTimeFormat(loc, { timeZone: tz, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(d);
+  const time = new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(d);
+  return { date, time };
 }
+
+function tzOffsetMin(tz, d) {
+  const p = {};
+  new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' })
+    .formatToParts(d).forEach(x => p[x.type] = x.value);
+  const asUtc = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour % 24, +p.minute, +p.second);
+  return Math.round((asUtc - Math.floor(d.getTime() / 1000) * 1000) / 60000);
+}
+
+// Awal hari rilis (00:00 WIB) dalam milidetik UTC
+function releaseStartMs(m) {
+  const r = getApproxRange(m);
+  const guess = Date.UTC(m.year, m.month - 1, r.startD);
+  return guess - tzOffsetMin(REF_TZ, new Date(guess)) * 60000;
+}
+
+function fmtCountdown(ms, days) {
+  // 2 hari atau lebih (selisih tanggal di WIB): tampil hari. Tinggal 1 hari: tampil jam 24, 23, ... 1.
+  if (days >= 2) return lang === 'id' ? `${days} hari` : `${days} days`;
+  const h = Math.min(24, Math.max(1, Math.ceil(ms / 3600000)));
+  return lang === 'id' ? `${h} jam` : `${h} ${h > 1 ? 'hours' : 'hour'}`;
+}
+
+function tickCountdowns() {
+  const prefix = lang === 'id' ? '⏳ Rilis di Indonesia dalam ' : '⏳ Releases in Indonesia in ';
+  document.querySelectorAll('.rel-countdown').forEach(el => {
+    el.textContent = prefix + fmtCountdown(+el.dataset.start - Date.now(), +el.dataset.days);
+  });
+}
+
+function fmtHM(min) {
+  const h = Math.floor(min / 60), m = min % 60;
+  if (lang === 'id') return (h ? h + ' jam' : '') + (h && m ? ' ' : '') + (m ? m + ' menit' : '');
+  return (h ? h + (h > 1 ? ' hours' : ' hour') : '') + (h && m ? ' ' : '') + (m ? m + ' min' : '');
+}
+
+let _lastRefDay = null;
+function updateHeaderDate(){
+  const el = document.getElementById('header-date-main');
+  const now = new Date();
+  const loc = lang === 'id' ? 'id-ID' : 'en-US';
+  const row = (label, z) => `<span class="tz-row"><span class="tz-label">${label}</span> ${escHtml(z.date)} · ${z.time}</span>`;
+
+  const ref = fmtZone(REF_TZ, now, loc);
+  const owner = OWNER_NAME ? OWNER_NAME + ' · ' : '';
+  let html = row(owner + (lang === 'id' ? 'Waktu Indonesia (WIB)' : 'Indonesia time (WIB)'), ref);
+
+  try {
+    const userTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (userTz) {
+      const u = fmtZone(userTz, now, loc);
+      html += row((lang === 'id' ? 'Waktu kamu' : 'Your time') + ' (' + escHtml(userTz) + ')', u);
+      const diff = tzOffsetMin(userTz, now) - tzOffsetMin(REF_TZ, now);
+      let txt;
+      if (diff === 0) txt = lang === 'id' ? 'Waktumu sama dengan waktu Indonesia' : 'Your time is the same as Indonesia';
+      else if (lang === 'id') txt = `Waktumu ${fmtHM(Math.abs(diff))} ${diff < 0 ? 'lebih lambat' : 'lebih cepat'} dari Indonesia`;
+      else txt = `Your time is ${fmtHM(Math.abs(diff))} ${diff < 0 ? 'behind' : 'ahead of'} Indonesia`;
+      html += `<span class="tz-row tz-diff">⇄ ${txt}</span>`;
+    }
+  } catch (e) {}
+  el.innerHTML = html;
+
+  // Kalau hari di WIB berganti, segarkan label kartu (Hari ini/Besok/dst) & kalender
+  const key = refToday().getTime();
+  if (_lastRefDay !== null && _lastRefDay !== key) {
+    render();
+    if (document.getElementById('calendar-modal').classList.contains('show')) renderCalendar();
+  }
+  _lastRefDay = key;
+}
+setInterval(() => { updateHeaderDate(); tickCountdowns(); }, 10000);
 
 function pickLang(l) {
   document.getElementById('lang-picker').classList.add('hide');
@@ -672,7 +754,7 @@ function pickLang(l) {
 }
 
 // ================== CALENDAR ==================
-let calDate = new Date();
+let calDate = refToday();
 calDate.setDate(1);
 let calSelectedDay = null; // number (day) or 'awal' / 'tengah' / 'akhir'
 let _calDayMap = {};
@@ -686,7 +768,7 @@ function mangaColor(days) {
 }
 
 function openCalendar() {
-  const now = new Date();
+  const now = refToday();
   calDate = new Date(now.getFullYear(), now.getMonth(), 1);
   calSelectedDay = null;
   renderCalendar();
@@ -739,7 +821,7 @@ function renderCalendar() {
 
   const firstWeekday = new Date(y, m, 1).getDay();
   const totalDays = daysInMonth(m + 1, y);
-  const now = new Date(); now.setHours(0,0,0,0);
+  const now = refToday();
   const isCurMonth = now.getFullYear() === y && now.getMonth() === m;
   const todayDate = now.getDate();
 
